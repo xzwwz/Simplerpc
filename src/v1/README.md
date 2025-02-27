@@ -1,4 +1,4 @@
-# Simple RPC
+# Simple RPC v1
 
 简单的RPC实现例子，通过这个例子你可以理解一个基本的RPC框架的实现原理。
 

@@ -1,4 +1,4 @@
-package v1;
+package v2;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -8,8 +8,13 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class RpcServer {
+    // 使用线程池
+    private static ExecutorService executorService = Executors.newFixedThreadPool(10);
+
     public static void main(String[] args) {
         try{
             ServerSocket serverSocket = new ServerSocket(8080);
@@ -18,23 +23,36 @@ public class RpcServer {
             while(true){
                 Socket socket = serverSocket.accept();
 
-                ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-                ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+                executorService.submit(()->handleClient(socket));
 
-                RpcRequest request = (RpcRequest) in.readObject();
 
-                String methodName = request.getMethodName();
-                List<Object> params = request.getParams();
-
-                Object result = invokeMethod(methodName,params);
-
-                out.writeObject(result);
-                out.flush();
-
-                in.close();
-                out.close();
-                socket.close();
             }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    private static void handleClient(Socket socket){
+        try{
+            ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+
+            RpcRequest request = (RpcRequest) in.readObject();
+
+            String methodName = request.getMethodName();
+            List<Object> params = request.getParams();
+
+            System.out.println("Method " + methodName + " with params " + params);
+
+            Object result = invokeMethod(methodName,params);
+
+            System.out.println("Result " + result);
+            out.writeObject(result);
+            out.flush();
+
+            in.close();
+            out.close();
+            socket.close();
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -66,11 +84,4 @@ public class RpcServer {
         return a-b;
     }
 
-    public static int addAll(List<Integer> nums){
-        int sum = 0;
-        for(int i:nums){
-            sum+=nums.get(i);
-        }
-        return sum;
-    }
 }
